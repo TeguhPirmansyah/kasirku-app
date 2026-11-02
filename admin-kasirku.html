@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KASIRKU - Admin & Kitchen Management System</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            coffee: {
+              50: '#FDF8F5',
+              100: '#F8EFEA',
+              500: '#9E5B2C',
+              600: '#84421E',
+              700: '#673016',
+              800: '#4E2411',
+              900: '#2A1308',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['Space Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.25); opacity: 0; }
+      100% { transform: scale(0.95); opacity: 0; }
+    }
+    .pulse-ring-effect::before {
+      content: '';
+      position: absolute;
+      left: -4px; top: -4px; right: -4px; bottom: -4px;
+      border-radius: 9999px;
+      border: 2px solid #ef4444;
+      animation: pulse-ring 2s infinite ease-out;
+    }
+    /* Thermal Receipt Look */
+    .receipt-paper {
+      background: #fdfdfd;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      border-top: 5px dashed #d1d5db;
+      border-bottom: 5px dashed #d1d5db;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 px-4 lg:px-6 py-3 flex items-center justify-between shadow-md">
+    <!-- Brand & Outlet Info -->
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-coffee-600 flex items-center justify-center text-white shadow-md shadow-amber-900/30">
+          <i class="fa-solid fa-mug-hot text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-display font-extrabold text-lg text-white tracking-tight">KASIRKU</h1>
+            <span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">ADMIN & KDS</span>
+          </div>
+          <p class="text-xs text-slate-400">Outlet: <span class="text-slate-200 font-medium">Universitas Pamulang (Viktor)</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions & Lecturer Demo Trigger -->
+    <div class="flex items-center space-x-3">
+      <!-- Live Order Simulator Button (Crucial for Demo) -->
+      <button onclick="simulateIncomingOrder()" class="relative group bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-md shadow-amber-500/20 active:scale-95 transition flex items-center space-x-2">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+        </span>
+        <i class="fa-solid fa-bell-concierge"></i>
+        <span>+ Simulasi Order Masuk</span>
+      </button>
+
+      <!-- Audio Mute / Unmute Toggle -->
+      <button onclick="toggleAudio()" id="audioToggleBtn" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition text-xs" title="Bunyi Bel Order">
+        <i class="fa-solid fa-volume-high text-amber-400" id="audioIcon"></i>
+      </button>
+
+      <!-- Digital Clock -->
+      <div class="hidden sm:flex flex-col items-end px-3 py-1 bg-slate-800/80 rounded-xl border border-slate-700/60">
+        <span id="currentTime" class="text-xs font-mono font-bold text-amber-300">14:30:25 WIB</span>
+        <span class="text-[10px] text-slate-400">Shift 1 • Kasir Aktif</span>
+      </div>
+
+      <!-- Admin Profile Dropdown -->
+      <div class="flex items-center space-x-2 pl-2 border-l border-slate-800">
+        <div class="w-8 h-8 rounded-full bg-amber-500 text-slate-900 font-bold text-xs flex items-center justify-center">
+          T
+        </div>
+        <div class="hidden md:block text-left">
+          <div class="text-xs font-bold text-slate-200">Teguh & Tim</div>
+          <div class="text-[10px] text-slate-400">Chief Technology Officer</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- BODY CONTENT WITH SIDEBAR & MAIN VIEW -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 flex flex-col justify-between hidden md:flex">
+      <div class="p-4 space-y-1.5">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Menu Utama</div>
+
+        <!-- Tab 1: Pesanan Masuk (Live Orders) -->
+        <button onclick="switchTab('orders')" id="nav-orders" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 transition">
+          <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-cash-register text-sm"></i>
+            <span>Pesanan Masuk</span>
+          </div>
+          <span id="badgeActiveOrders" class="bg-amber-500 text-slate-950 font-extrabold text-[10px] px-2 py-0.5 rounded-full">4</span>
+        </button>
+
+        <!-- Tab 2: Statistik & Analitik -->
+        <button onclick="switchTab('stats')" id="nav-stats" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+          <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-chart-pie text-sm"></i>
+            <span>Statistik Penjualan</span>
+          </div>
+          <i class="fa-solid fa-chevron-right text-[10px] opacity-40"></i>
+        </button>
+
+        <!-- Tab 3: Manajemen Menu & Stok -->
+        <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+          <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-boxes-stacked text-sm"></i>
+            <span>Menu & Stok Bahan</span>
+          </div>
+          <span class="bg-rose-500/20 text-rose-400 text-[10px] px-2 py-0.5 rounded-full font-bold">1 Kritis</span>
+        </button>
+
+        <!-- Tab 4: Laporan Keuangan (Laba/Rugi) -->
+        <button onclick="switchTab('finance')" id="nav-finance" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+          <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-file-invoice-dollar text-sm"></i>
+            <span>Laporan Laba / Rugi</span>
+          </div>
+          <i class="fa-solid fa-chevron-right text-[10px] opacity-40"></i>
+        </button>
+      </div>
+
+      <!-- Quick Server Sync status -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+        <div class="flex items-center justify-between text-[11px] text-slate-400 mb-2">
+          <span>Koneksi Cloud POS:</span>
+          <span class="text-emerald-400 font-bold flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>Terhubung</span>
+        </div>
+        <div class="text-[10px] text-slate-500">
+          Database: Supabase / PostgreSQL<br>
+          Customer App: <a href="#" class="text-amber-400 hover:underline">cek-hub--muhamadteguhpir</a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN INTERACTIVE VIEW AREA -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-100">
+      
+      <!-- ================= TAB 1: LIVE ORDERS (KITCHEN DISPLAY SYSTEM) ================= -->
+      <section id="tab-orders" class="tab-content space-y-6">
+        <!-- Top Banner for KDS Summary -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="font-display font-bold text-slate-900 text-lg sm:text-xl">Kitchen Display & Antrean Kasir</h2>
+            <p class="text-xs text-slate-500">Pesanan dari customer web app masuk secara real-time ke layar ini.</p>
+          </div>
+          <div class="flex items-center space-x-2 text-xs">
+            <span class="px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl font-semibold">
+              <i class="fa-solid fa-stopwatch mr-1.5 text-amber-600"></i>Rata-rata Racik: <strong>3.4 Menit</strong>
+            </span>
+            <span class="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl font-semibold">
+              <i class="fa-solid fa-circle-check mr-1.5 text-emerald-600"></i>Selesai Hari Ini: <strong id="completedOrderCount">18</strong>
+            </span>
+          </div>
+        </div>
+
+        <!-- Kanban Board Columns: Baru -> Diracik -> Siap Ambil -> Selesai -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          
+          <!-- Column 1: Order Baru (Waiting to be confirmed) -->
+          <div class="bg-slate-200/60 rounded-2xl p-4 border border-slate-300/60 flex flex-col min-h-[500px]">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-300">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+                <h3 class="font-bold text-sm text-slate-800">Pesanan Masuk (Baru)</h3>
+              </div>
+              <span id="colCount-new" class="bg-rose-500 text-white font-extrabold text-xs px-2 py-0.5 rounded-full">2</span>
+            </div>
+            <div id="orderList-new" class="space-y-3 pt-3 flex-1 overflow-y-auto">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+
+          <!-- Column 2: Sedang Diracik (In Process) -->
+          <div class="bg-amber-50/60 rounded-2xl p-4 border border-amber-200/60 flex flex-col min-h-[500px]">
+            <div class="flex items-center justify-between pb-3 border-b border-amber-300">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                <h3 class="font-bold text-sm text-slate-800">Sedang Diracik Barista</h3>
+              </div>
+              <span id="colCount-processing" class="bg-amber-500 text-slate-900 font-extrabold text-xs px-2 py-0.5 rounded-full">1</span>
+            </div>
+            <div id="orderList-processing" class="space-y-3 pt-3 flex-1 overflow-y-auto">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+
+          <!-- Column 3: Siap Diambil Customer (Ready for Pickup) -->
+          <div class="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-200/60 flex flex-col min-h-[500px]">
+            <div class="flex items-center justify-between pb-3 border-b border-emerald-300">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <h3 class="font-bold text-sm text-slate-800">Siap Diambil (Ready)</h3>
+              </div>
+              <span id="colCount-ready" class="bg-emerald-600 text-white font-extrabold text-xs px-2 py-0.5 rounded-full">1</span>
+            </div>
+            <div id="orderList-ready" class="space-y-3 pt-3 flex-1 overflow-y-auto">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 2: STATISTIK & ANALITIK PENJUALAN ================= -->
+      <section id="tab-stats" class="tab-content hidden space-y-6">
+        <div>
+          <h2 class="font-display font-bold text-slate-900 text-xl">Statistik & Kinerja Penjualan Hari Ini</h2>
+          <p class="text-xs text-slate-500">Analisis metrik pergerakan kasir dan tren pembelian mahasiswa/pelanggan.</p>
+        </div>
+
+        <!-- 4 KPI Metrics Card -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-400 font-medium">Total Omset Hari Ini</p>
+              <h3 class="font-display font-extrabold text-2xl text-slate-900 mt-1" id="statOmset">Rp 742.000</h3>
+              <p class="text-[11px] text-emerald-600 mt-1 font-semibold"><i class="fa-solid fa-arrow-up mr-1"></i>+24.5% vs kemarin</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-400 font-medium">Total Cup / Transaksi</p>
+              <h3 class="font-display font-extrabold text-2xl text-slate-900 mt-1" id="statTransactions">32 Transaksi</h3>
+              <p class="text-[11px] text-emerald-600 mt-1 font-semibold"><i class="fa-solid fa-arrow-up mr-1"></i>Peak jam 13:00</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-400 font-medium">Laba Bersih Riil</p>
+              <h3 class="font-display font-extrabold text-2xl text-emerald-700 mt-1" id="statProfit">Rp 395.200</h3>
+              <p class="text-[11px] text-slate-500 mt-1">Margin laba bersih: <strong class="text-emerald-700">53.2%</strong></p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-400 font-medium">Metode Favorit</p>
+              <h3 class="font-display font-extrabold text-xl text-slate-900 mt-1">QRIS Dinamis</h3>
+              <p class="text-[11px] text-slate-500 mt-1">78% Transaksi Non-Tunai</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-qrcode"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual Analytics Chart Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Hourly Chart -->
+          <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="font-bold text-slate-800 text-sm">Distribusi Jam Sibuk Pemesanan (Hourly Traffic)</h4>
+                <p class="text-xs text-slate-400">Lonjakan terjadi saat jam istirahat & pergantian kelas kuliah.</p>
+              </div>
+              <span class="text-xs bg-slate-100 px-2.5 py-1 rounded-lg text-slate-600 font-medium">Hari Ini</span>
+            </div>
+
+            <!-- Bar Chart Simulation -->
+            <div class="h-48 flex items-end justify-between pt-8 pb-2 px-2 border-b border-slate-200">
+              <div class="flex flex-col items-center flex-1">
+                <div class="w-7 bg-amber-200 rounded-t-md hover:bg-amber-400 transition" style="height: 25%" title="08:00 - 4 Order"></div>
+                <span class="text-[10px] text-slate-400 mt-2">08:00</span>
+              </div>
+              <div class="flex flex-col items-center flex-1">
+                <div class="w-7 bg-amber-300 rounded-t-md hover:bg-amber-400 transition" style="height: 45%" title="10:00 - 8 Order"></div>
+                <span class="text-[10px] text-slate-400 mt-2">10:00</span>
+              </div>
+              <div class="flex flex-col items-center flex-1">
+                <div class="w-7 bg-amber-500 rounded-t-md hover:bg-amber-600 transition" style="height: 95%" title="12:00 - 18 Order (Peak)"></div>
+                <span class="text-[10px] font-bold text-amber-700 mt-2">12:00</span>
+              </div>
+              <div class="flex flex-col items-center flex-1">
+                <div class="w-7 bg-amber-600 rounded-t-md hover:bg-amber-700 transition" style="height: 85%" title="14:00 - 15 Order"></div>
+                <span class="text-[10px] font-bold text-amber-700 mt-2">14:00</span>
+              </div>
+              <div class="flex flex-col items-center flex-1">
+                <div class="w-7 bg-amber-400 rounded-t-md hover:bg-amber-500 transition" style="height: 55%" title="16:00 - 10 Order"></div>
+                <span class="text-[10px] text-slate-400 mt-2">16:00</span>
+              </div>
+              <div class="flex flex-col items-center flex-1">
+                <div class="w-7 bg-amber-300 rounded-t-md hover:bg-amber-400 transition" style="height: 35%" title="18:00 - 6 Order"></div>
+                <span class="text-[10px] text-slate-400 mt-2">18:00</span>
+              </div>
+              <div class="flex flex-col items-center flex-1">
+                <div class="w-7 bg-amber-200 rounded-t-md hover:bg-amber-400 transition" style="height: 15%" title="20:00 - 2 Order"></div>
+                <span class="text-[10px] text-slate-400 mt-2">20:00</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-center text-xs text-slate-500 pt-3">
+              <span><i class="fa-solid fa-circle text-amber-500 text-[10px] mr-1"></i>Puncak Antrean: <strong>12.00 - 14.30</strong></span>
+              <span class="text-emerald-600 font-semibold"><i class="fa-solid fa-bolt mr-1"></i>Waktu Tunggu Rata-rata 3.4 Menit</span>
+            </div>
+          </div>
+
+          <!-- Top Selling Menu Leaderboard -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+            <div>
+              <h4 class="font-bold text-slate-800 text-sm mb-3">Top 4 Menu Terlaris</h4>
+              <div class="space-y-3">
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-800">1. Kopi Susu Aren Kasirku</span>
+                    <span class="text-amber-800">16 Cup</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-amber-600 h-full rounded-full" style="width: 85%;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-800">2. Butter Croissant Crispy</span>
+                    <span class="text-amber-800">9 Pcs</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-amber-500 h-full rounded-full" style="width: 55%;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-800">3. Iced Americano Kasirku</span>
+                    <span class="text-amber-800">7 Cup</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-amber-400 h-full rounded-full" style="width: 42%;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-800">4. Matcha Green Tea Latte</span>
+                    <span class="text-amber-800">5 Cup</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-emerald-500 h-full rounded-full" style="width: 30%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-400 text-center">
+              Pembaruan otomatis tiap transaksi selesai
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 3: MANAJEMEN MENU & STOK ================= -->
+      <section id="tab-inventory" class="tab-content hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="font-display font-bold text-slate-900 text-xl">Katalog Menu & Kontrol Stok Bahan</h2>
+            <p class="text-xs text-slate-500">Stok berkurang otomatis saat kasir memproses pesanan lunas.</p>
+          </div>
+          <button onclick="showToast('Fitur tambah menu baru siap diintegrasikan!')" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5 self-start">
+            <i class="fa-solid fa-plus"></i>
+            <span>Tambah Menu Baru</span>
+          </button>
+        </div>
+
+        <!-- Inventory Alert Banner if Low -->
+        <div class="bg-rose-50 border border-rose-200 p-3.5 rounded-2xl flex items-center justify-between text-xs text-rose-900">
+          <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i>
+            <span><strong>Peringatan Bahan:</strong> Stok <em>Susu Fresh Milk (Diamond 1L)</em> tersisa 2 Liter! Segera lakukan restock.</span>
+          </div>
+          <button onclick="showToast('Notifikasi pesanan bahan dikirim ke supplier!')" class="bg-rose-600 text-white px-3 py-1 rounded-lg font-semibold hover:bg-rose-700 transition">Order ke Supplier</button>
+        </div>
+
+        <!-- Table of Menu Items & Stock -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th class="p-3.5">Menu / Produk</th>
+                  <th class="p-3.5">Kategori</th>
+                  <th class="p-3.5">Harga Jual</th>
+                  <th class="p-3.5">HPP (Modal)</th>
+                  <th class="p-3.5">Status Bahan</th>
+                  <th class="p-3.5 text-center">Tersedia</th>
+                  <th class="p-3.5 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-700" id="inventoryTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 4: LAPORAN KEUANGAN (LABA/RUGI) ================= -->
+      <section id="tab-finance" class="tab-content hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="font-display font-bold text-slate-900 text-xl">Laporan Laba & Rugi Real-Time</h2>
+            <p class="text-xs text-slate-500">Membantu UMKM memisahkan keuangan pribadi dan kas usaha dagang secara akurat.</p>
+          </div>
+          <button onclick="exportReportSimulation()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center space-x-2 self-start shadow-sm">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>Export Laporan (Excel / CSV)</span>
+          </button>
+        </div>
+
+        <!-- Profit and Loss Breakdown Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">1. Pendapatan Penjualan</span>
+            <h3 class="font-display font-extrabold text-2xl text-slate-900 mt-2">Rp 742.000</h3>
+            <p class="text-xs text-slate-500 mt-1">Total kotor dari 32 transaksi</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">2. HPP (Bahan & Cup)</span>
+            <h3 class="font-display font-extrabold text-2xl text-rose-600 mt-2">- Rp 286.800</h3>
+            <p class="text-xs text-slate-500 mt-1">Biji espresso, susu, gula aren, cup & sedotan</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">3. Laba Kotor (Gross Profit)</span>
+            <h3 class="font-display font-extrabold text-2xl text-emerald-600 mt-2">Rp 455.200</h3>
+            <p class="text-xs text-emerald-700 mt-1 font-semibold">Margin Kotor 61.3%</p>
+          </div>
+        </div>
+
+        <!-- Detailed Statement Table -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+          <h4 class="font-bold text-slate-900 text-sm">Rincian Pembukuan Kas Harian</h4>
+          
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between py-1.5 border-b border-slate-100">
+              <span class="text-slate-600">Total Penjualan Non-Tunai (QRIS & VA)</span>
+              <span class="font-semibold text-slate-900">Rp 578.760</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-100">
+              <span class="text-slate-600">Total Penjualan Tunai Kasir</span>
+              <span class="font-semibold text-slate-900">Rp 163.240</span>
+            </div>
+            <div class="flex justify-between py-1.5 border-b border-slate-100 text-rose-600">
+              <span>Beban Operasional Harian (Es Batu, Listrik Gerai)</span>
+              <span class="font-semibold">- Rp 60.000</span>
+            </div>
+            <div class="flex justify-between py-2 border-t-2 border-slate-300 font-bold text-sm text-slate-900 bg-amber-50/50 px-3 rounded-lg">
+              <span>LABA BERSIH HARI INI (NET PROFIT)</span>
+              <span class="text-emerald-700 font-display font-extrabold text-base">Rp 395.200</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- RECEIPT MODAL SIMULATOR (58mm Thermal Print Preview) -->
+  <div id="receiptModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-xs rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-fade-in-up">
+      <!-- Modal Action Bar -->
+      <div class="p-3 bg-slate-900 text-white flex justify-between items-center text-xs">
+        <span class="font-bold"><i class="fa-solid fa-print mr-1.5 text-amber-400"></i>Cetak Struk Kasir</span>
+        <button onclick="closeReceiptModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-sm"></i></button>
+      </div>
+
+      <!-- Thermal Paper Look -->
+      <div class="p-5 font-mono text-[11px] text-slate-800 receipt-paper space-y-2.5" id="printableReceipt">
+        <div class="text-center">
+          <div class="font-extrabold text-base tracking-wider text-slate-900">KASIRKU COFFEE</div>
+          <div class="text-[10px] text-slate-500">Cabang Kampus Viktor UNPAM</div>
+          <div class="text-[9px] text-slate-400">Jl. Raya Puspiptek No. 46, Tangsel</div>
+        </div>
+        <div class="border-b border-dashed border-slate-400 my-1"></div>
+
+        <div class="flex justify-between text-[10px]">
+          <span id="recOrderNum">Order: #KS-104</span>
+          <span id="recDateTime">24/10/2026 14:32</span>
+        </div>
+        <div class="flex justify-between text-[10px]">
+          <span>Kasir: Teguh/Sistem</span>
+          <span id="recType" class="font-bold">PICKUP</span>
+        </div>
+        <div class="border-b border-dashed border-slate-400 my-1"></div>
+
+        <!-- Items on Receipt -->
+        <div id="recItemsList" class="space-y-1.5 text-[10px]">
+          <!-- Injected via JS -->
+        </div>
+
+        <div class="border-b border-dashed border-slate-400 my-1"></div>
+        <div class="space-y-1 text-[10px]">
+          <div class="flex justify-between">
+            <span>Subtotal</span>
+            <span id="recSubtotal">Rp 36.000</span>
+          </div>
+          <div class="flex justify-between text-emerald-700">
+            <span>Diskon Promo</span>
+            <span id="recDiscount">-Rp 10.000</span>
+          </div>
+          <div class="flex justify-between font-bold text-xs pt-1 border-t border-slate-300">
+            <span>TOTAL AKHIR</span>
+            <span id="recGrandTotal">Rp 26.000</span>
+          </div>
+          <div class="flex justify-between text-[10px] text-slate-500">
+            <span>Metode Bayar</span>
+            <span id="recPayMethod">QRIS DINAMIS (LUNAS)</span>
+          </div>
+        </div>
+
+        <div class="border-b border-dashed border-slate-400 my-2"></div>
+        <div class="text-center text-[9px] text-slate-400 space-y-1">
+          <div>* Terima kasih telah menikmati KASIRKU *</div>
+          <div>Pesan duluan tanpa antre via aplikasi!</div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="p-3 bg-slate-50 border-t border-slate-200 flex space-x-2">
+        <button onclick="simulatePrintAction()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5">
+          <i class="fa-solid fa-print"></i>
+          <span>Cetak Printer Bluetooth</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST FLOATING ALERT -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2.5 transition-all duration-300 opacity-0 pointer-events-none transform translate-y-2">
+    <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+    <span id="toastMessage">Pesanan berhasil diperbarui!</span>
+  </div>
+
+  <!-- AUDIO CONTEXT SCRIPT FOR PLEASANT INCOMING ORDER CHIME -->
+  <script>
+    // Web Audio Synthesizer for pleasant order bell (No external sound files required)
+    let audioEnabled = true;
+
+    function playOrderChime() {
+      if (!audioEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        
+        const now = ctx.currentTime;
+        // Two-tone bell (Ding-dong)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(880, now); // A5
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.6);
+
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1318.5, now + 0.15); // E6
+        gain2.gain.setValueAtTime(0.4, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.15);
+        osc2.stop(now + 0.8);
+      } catch (e) {
+        console.log("Audio play error", e);
+      }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const icon = document.getElementById('audioIcon');
+      if (audioEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-amber-400';
+        showToast('Suara notifikasi pesanan diaktifkan');
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+        showToast('Suara notifikasi dinonaktifkan');
+      }
+    }
+
+    // Dynamic Clock
+    setInterval(() => {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('id-ID', { hour12: false }) + ' WIB';
+      const el = document.getElementById('currentTime');
+      if (el) el.textContent = timeStr;
+    }, 1000);
+  </script>
+
+  <!-- BUSINESS LOGIC & DATA SCRIPT -->
+  <script>
+    // Live Orders Data in Memory
+    let orders = [
+      {
+        id: '#KS-101',
+        customer: 'Rian (Fakultas Teknik)',
+        time: '2 mnt lalu',
+        type: 'Pickup',
+        payment: 'QRIS LUNAS',
+        isPaid: true,
+        status: 'new', // 'new', 'processing', 'ready', 'done'
+        items: [
+          { name: 'Kopi Susu Aren Kasirku', qty: 2, size: 'Large', notes: 'Less sugar 70%, Normal Ice' }
+        ],
+        subtotal: 44000,
+        discount: 10000,
+        total: 34000
+      },
+      {
+        id: '#KS-102',
+        customer: 'Dinda (Ekonomi)',
+        time: '4 mnt lalu',
+        type: 'Dine In (Meja 04)',
+        payment: 'QRIS LUNAS',
+        isPaid: true,
+        status: 'new',
+        items: [
+          { name: 'Matcha Green Tea Latte', qty: 1, size: 'Regular', notes: 'Extra Sugar' },
+          { name: 'Butter Croissant Crispy', qty: 1, size: '-', notes: 'Hangatkan' }
+        ],
+        subtotal: 38000,
+        discount: 0,
+        total: 38000
+      },
+      {
+        id: '#KS-103',
+        customer: 'Budi Santoso',
+        time: '7 mnt lalu',
+        type: 'Pickup',
+        payment: 'Bayar Tunai di Kasir',
+        isPaid: false,
+        status: 'processing',
+        items: [
+          { name: 'Iced Americano Kasirku', qty: 1, size: 'Regular', notes: 'No sugar, Extra Ice' }
+        ],
+        subtotal: 15000,
+        discount: 0,
+        total: 15000
+      },
+      {
+        id: '#KS-104',
+        customer: 'Siti Sarah',
+        time: '11 mnt lalu',
+        type: 'Pickup',
+        payment: 'QRIS LUNAS',
+        isPaid: true,
+        status: 'ready',
+        items: [
+          { name: 'Combo Hemat Tugas (Kopi + Toast)', qty: 1, size: 'Regular', notes: 'Normal' }
+        ],
+        subtotal: 30000,
+        discount: 5000,
+        total: 25000
+      }
+    ];
+
+    // Inventory & Catalog Data
+    const inventoryData = [
+      { id: 1, name: 'Kopi Susu Aren Kasirku', category: 'Kopi', price: 18000, hpp: 6500, stockName: 'Biji Arabika & Aren', stockStatus: 'Aman (85%)', isAvailable: true },
+      { id: 2, name: 'Iced Americano Kasirku', category: 'Kopi', price: 15000, hpp: 4000, stockName: 'Biji Arabika House Blend', stockStatus: 'Aman (90%)', isAvailable: true },
+      { id: 3, name: 'Salted Caramel Macchiato', category: 'Kopi', price: 24000, hpp: 9000, stockName: 'Saus Karamel & Susu', stockStatus: 'Menipis (20%)', isAvailable: true },
+      { id: 4, name: 'Matcha Green Tea Latte', category: 'Non-Kopi', price: 22000, hpp: 8500, stockName: 'Bubuk Uji Matcha', stockStatus: 'Aman (65%)', isAvailable: true },
+      { id: 5, name: 'Signature Chocolate Cream', category: 'Non-Kopi', price: 20000, hpp: 7500, stockName: 'Cokelat Belgia Bubuk', stockStatus: 'Aman (70%)', isAvailable: true },
+      { id: 6, name: 'Butter Croissant Crispy', category: 'Snack', price: 16000, hpp: 7000, stockName: 'Pastry Dough Frozen', stockStatus: 'Kritis (2 Pcs)', isAvailable: true },
+      { id: 7, name: 'Toast Roti Coklat Keju', category: 'Snack', price: 18000, hpp: 6000, stockName: 'Roti Gandum & Keju', stockStatus: 'Aman (15 Pcs)', isAvailable: true },
+      { id: 8, name: 'Susu Fresh Milk (Diamond 1L)', category: 'Bahan Baku', price: 0, hpp: 18000, stockName: 'Stok Pendingin', stockStatus: 'KRITIS (2 Liter)', isAvailable: false }
+    ];
+
+    // Initialize View
+    window.onload = function() {
+      renderOrdersBoard();
+      renderInventoryTable();
+    };
+
+    // Render Orders Board (3 Columns)
+    function renderOrdersBoard() {
+      const colNew = document.getElementById('orderList-new');
+      const colProc = document.getElementById('orderList-processing');
+      const colReady = document.getElementById('orderList-ready');
+
+      colNew.innerHTML = '';
+      colProc.innerHTML = '';
+      colReady.innerHTML = '';
+
+      let cNew = 0, cProc = 0, cReady = 0;
+
+      orders.forEach(order => {
+        if (order.status === 'new') cNew++;
+        if (order.status === 'processing') cProc++;
+        if (order.status === 'ready') cReady++;
+
+        const card = createOrderCard(order);
+        if (order.status === 'new') colNew.appendChild(card);
+        else if (order.status === 'processing') colProc.appendChild(card);
+        else if (order.status === 'ready') colReady.appendChild(card);
+      });
+
+      document.getElementById('colCount-new').textContent = cNew;
+      document.getElementById('colCount-processing').textContent = cProc;
+      document.getElementById('colCount-ready').textContent = cReady;
+      document.getElementById('badgeActiveOrders').textContent = cNew + cProc + cReady;
+    }
+
+    function createOrderCard(order) {
+      const div = document.createElement('div');
+      div.className = "bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:shadow-md transition flex flex-col justify-between space-y-3";
+
+      const itemsHtml = order.items.map(item => `
+        <div class="text-xs">
+          <div class="flex justify-between font-bold text-slate-800">
+            <span>${item.qty}x ${item.name}</span>
+            <span class="text-slate-400 font-normal">${item.size !== '-' ? item.size : ''}</span>
+          </div>
+          <div class="text-[11px] text-amber-800 font-medium">${item.notes}</div>
+        </div>
+      `).join('');
+
+      let actionButtons = '';
+      if (order.status === 'new') {
+        actionButtons = `
+          <button onclick="updateOrderStatus('${order.id}', 'processing')" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-blender"></i>
+            <span>Terima & Racik</span>
+          </button>
+          <button onclick="openReceiptModal('${order.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs transition" title="Cetak Struk">
+            <i class="fa-solid fa-print"></i>
+          </button>
+        `;
+      } else if (order.status === 'processing') {
+        actionButtons = `
+          <button onclick="updateOrderStatus('${order.id}', 'ready')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-bell"></i>
+            <span>Tandai Siap Ambil</span>
+          </button>
+          <button onclick="openReceiptModal('${order.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs transition" title="Cetak Struk">
+            <i class="fa-solid fa-print"></i>
+          </button>
+        `;
+      } else if (order.status === 'ready') {
+        actionButtons = `
+          <button onclick="updateOrderStatus('${order.id}', 'done')" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-check"></i>
+            <span>Selesai / Sudah Diambil</span>
+          </button>
+          <button onclick="openReceiptModal('${order.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs transition" title="Cetak Struk">
+            <i class="fa-solid fa-print"></i>
+          </button>
+        `;
+      }
+
+      div.innerHTML = `
+        <div class="flex justify-between items-start border-b border-slate-100 pb-2">
+          <div>
+            <div class="flex items-center space-x-1.5">
+              <span class="font-display font-extrabold text-sm text-slate-900">${order.id}</span>
+              <span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-semibold">${order.type}</span>
+            </div>
+            <div class="text-xs font-semibold text-slate-700 mt-0.5">${order.customer}</div>
+          </div>
+          <span class="text-[10px] text-slate-400"><i class="fa-regular fa-clock mr-1"></i>${order.time}</span>
+        </div>
+
+        <div class="space-y-2">
+          ${itemsHtml}
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+          <div>
+            <span class="text-[10px] ${order.isPaid ? 'text-emerald-700 bg-emerald-50' : 'text-amber-800 bg-amber-50'} px-2 py-0.5 rounded font-bold">
+              ${order.payment}
+            </span>
+          </div>
+          <span class="font-display font-bold text-slate-900 text-sm">Rp ${order.total.toLocaleString('id-ID')}</span>
+        </div>
+
+        <div class="flex items-center space-x-2 pt-1">
+          ${actionButtons}
+        </div>
+      `;
+      return div;
+    }
+
+    function updateOrderStatus(orderId, newStatus) {
+      const ord = orders.find(o => o.id === orderId);
+      if (ord) {
+        if (newStatus === 'done') {
+          orders = orders.filter(o => o.id !== orderId);
+          const compCount = document.getElementById('completedOrderCount');
+          compCount.textContent = parseInt(compCount.textContent) + 1;
+          showToast(`Pesanan ${orderId} selesai dan diserahkan ke pelanggan!`);
+        } else {
+          ord.status = newStatus;
+          if (newStatus === 'processing') showToast(`Pesanan ${orderId} mulai diracik barista!`);
+          if (newStatus === 'ready') showToast(`Pesanan ${orderId} siap! Notifikasi dikirim.`);
+        }
+        renderOrdersBoard();
+      }
+    }
+
+    // SIMULATE INCOMING ORDER FOR PRESENTATION DEMO
+    function simulateIncomingOrder() {
+      playOrderChime();
+
+      const customerNames = ['Rizky (Teknik)', 'Nadia (Akuntansi)', 'Fajar (Hukum)', 'Putri (Sastra)', 'Dimas (Informatika)'];
+      const randomCust = customerNames[Math.floor(Math.random() * customerNames.length)];
+      const randomNum = Math.floor(105 + Math.random() * 50);
+
+      const newOrder = {
+        id: `#KS-${randomNum}`,
+        customer: randomCust,
+        time: 'Baru saja',
+        type: Math.random() > 0.4 ? 'Pickup' : 'Dine In (Meja 08)',
+        payment: 'QRIS LUNAS',
+        isPaid: true,
+        status: 'new',
+        items: [
+          { name: 'Kopi Susu Aren Kasirku', qty: 1, size: 'Regular', notes: 'Normal Ice, 100% Gula Aren' },
+          { name: 'Toast Roti Coklat Keju', qty: 1, size: '-', notes: 'Renyah' }
+        ],
+        subtotal: 36000,
+        discount: 10000,
+        total: 26000
+      };
+
+      orders.unshift(newOrder);
+      renderOrdersBoard();
+
+      // Update Top stats dynamic omset
+      const omsetEl = document.getElementById('statOmset');
+      let currentVal = parseInt(omsetEl.textContent.replace(/\D/g, ''));
+      currentVal += 26000;
+      omsetEl.textContent = `Rp ${currentVal.toLocaleString('id-ID')}`;
+
+      showToast(`🔔 DING-DONG! Pesanan Masuk #${newOrder.id} dari ${newOrder.customer}!`);
+    }
+
+    // Tab Navigation Switcher
+    function switchTab(tabKey) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.className = 'nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition';
+      });
+
+      document.getElementById(`tab-${tabKey}`).classList.remove('hidden');
+      const activeNav = document.getElementById(`nav-${tabKey}`);
+      if (activeNav) {
+        activeNav.className = 'nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 transition';
+      }
+    }
+
+    // Render Inventory Table
+    function renderInventoryTable() {
+      const tbody = document.getElementById('inventoryTableBody');
+      tbody.innerHTML = inventoryData.map(item => `
+        <tr class="hover:bg-slate-50/80 transition">
+          <td class="p-3.5 font-bold text-slate-900">${item.name}</td>
+          <td class="p-3.5"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-semibold">${item.category}</span></td>
+          <td class="p-3.5 font-semibold text-slate-800">${item.price > 0 ? 'Rp ' + item.price.toLocaleString('id-ID') : '-'}</td>
+          <td class="p-3.5 text-slate-500 font-mono text-[11px]">Rp ${item.hpp.toLocaleString('id-ID')}</td>
+          <td class="p-3.5">
+            <span class="text-[11px] font-semibold ${item.stockStatus.includes('Kritis') || item.stockStatus.includes('KRITIS') ? 'text-rose-600 font-bold' : (item.stockStatus.includes('Menipis') ? 'text-amber-600' : 'text-emerald-700')}">
+              ${item.stockStatus}
+            </span>
+          </td>
+          <td class="p-3.5 text-center">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" ${item.isAvailable ? 'checked' : ''} onchange="toggleItemStock(${item.id})" class="sr-only peer">
+              <div class="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-600"></div>
+            </label>
+          </td>
+          <td class="p-3.5 text-right">
+            <button onclick="showToast('Edit harga ${item.name} disimpan!')" class="text-slate-400 hover:text-amber-600 transition px-2 py-1"><i class="fa-regular fa-pen-to-square"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleItemStock(itemId) {
+      const item = inventoryData.find(i => i.id === itemId);
+      if (item) {
+        item.isAvailable = !item.isAvailable;
+        showToast(`Status menu "${item.name}" diubah ke: ${item.isAvailable ? 'Tersedia' : 'Habis'}`);
+      }
+    }
+
+    // Receipt Modal logic
+    function openReceiptModal(orderId) {
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      document.getElementById('recOrderNum').textContent = `Order: ${order.id}`;
+      document.getElementById('recType').textContent = order.type.toUpperCase();
+      document.getElementById('recSubtotal').textContent = `Rp ${order.subtotal.toLocaleString('id-ID')}`;
+      document.getElementById('recDiscount').textContent = `-Rp ${order.discount.toLocaleString('id-ID')}`;
+      document.getElementById('recGrandTotal').textContent = `Rp ${order.total.toLocaleString('id-ID')}`;
+      document.getElementById('recPayMethod').textContent = order.payment.toUpperCase();
+
+      const itemsList = document.getElementById('recItemsList');
+      itemsList.innerHTML = order.items.map(it => `
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-bold">${it.qty}x ${it.name}</div>
+            <div class="text-[9px] text-slate-500">${it.notes}</div>
+          </div>
+          <span class="font-mono">Rp 18.000</span>
+        </div>
+      `).join('');
+
+      document.getElementById('receiptModal').classList.remove('hidden');
+    }
+
+    function closeReceiptModal() {
+      document.getElementById('receiptModal').classList.add('hidden');
+    }
+
+    function simulatePrintAction() {
+      showToast('🖨️ Mengirim data struk ke Printer Bluetooth 58mm... Sukses!');
+      setTimeout(() => {
+        closeReceiptModal();
+      }, 1000);
+    }
+
+    function exportReportSimulation() {
+      showToast('📥 Mengunduh Laporan_Keuangan_KASIRKU_Harian.xlsx...');
+    }
+
+    // Toast Helper
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMessage').textContent = message;
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+      }, 2800);
+    }
+  </script>
+</body>
+</html>
